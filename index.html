@@ -3,23 +3,24 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Data Matcher Pro v2</title>
+<title>Data Matcher Pro</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
-/* ==== BASIC STYLES ==== */
-body{font-family:'Segoe UI',sans-serif;background:#0a0e27;color:#e0e6ed;margin:0;padding:0;}
-.container{max-width:1000px;margin:0 auto;padding:20px;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Segoe UI',sans-serif;background:#0a0e27;color:#e0e6ed;overflow-x:hidden;}
 header{text-align:center;padding:30px 0;background:linear-gradient(135deg,#1a1f3a 0%,#0f1729 100%);border-bottom:2px solid #2d3748;margin-bottom:30px;}
-h1{font-size:2.5em;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:10px;}
+h1{font-size:2.5em;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:10px;}
 .subtitle{color:#a0aec0;font-size:1.1em;}
+.container{max-width:1000px;margin:0 auto;padding:20px;padding-right:320px;} /* padding-right pour drawer */
 .upload-section{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:30px;}
 .upload-box{background:#1a1f3a;border:2px dashed #4a5568;border-radius:12px;padding:40px;text-align:center;cursor:pointer;transition:all 0.3s ease;position:relative;}
-.upload-box.has-file{border-color:#48bb78;border-style:solid;background:#1a2f23;}
 .upload-box:hover{border-color:#667eea;background:#1e2642;transform:translateY(-2px);}
+.upload-box.has-file{border-color:#48bb78;border-style:solid;background:#1a2f23;}
+.upload-icon{font-size:3em;margin-bottom:15px;}
 .upload-label{font-size:1.2em;color:#cbd5e0;margin-bottom:8px;}
 .file-name{color:#48bb78;font-size:0.9em;margin-top:10px;font-weight:600;}
-input[type=file]{display:none;}
+input[type="file"]{display:none;}
 .stats-bar{background:#1a1f3a;border-radius:12px;padding:20px;margin-bottom:30px;display:grid;grid-template-columns:repeat(4,1fr);gap:20px;border:1px solid #2d3748;}
 .stat-item{text-align:center;padding:15px;background:#0f1729;border-radius:8px;border:1px solid #2d3748;}
 .stat-value{font-size:2em;font-weight:bold;margin-bottom:5px;}
@@ -35,11 +36,14 @@ button.primary{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);border
 button.primary:hover{transform:translateY(-2px);box-shadow:0 5px 15px rgba(102,126,234,0.4);}
 button.success{background:#48bb78;border:none;color:white;}
 button:disabled{opacity:0.5;cursor:not-allowed;}
-.matching-area{display:grid;grid-template-columns:1fr 80px 1fr;gap:20px;height:400px;}
+.matching-area{display:grid;grid-template-columns:1fr 80px 1fr;gap:20px;height:600px;}
 .table-panel{background:#1a1f3a;border-radius:12px;border:1px solid #2d3748;overflow:hidden;display:flex;flex-direction:column;}
 .panel-header{padding:15px 20px;background:#0f1729;border-bottom:1px solid #2d3748;font-weight:600;font-size:1.1em;}
+.panel-header.table1{border-left:3px solid #667eea;}
+.panel-header.table2{border-left:3px solid #764ba2;}
 .table-rows{overflow-y:auto;flex:1;padding:10px;}
-.row-item{padding:15px;margin-bottom:8px;background:#0f1729;border-radius:8px;border:2px solid transparent;cursor:pointer;position:relative;transition:all 0.3s ease;}
+.row-item{padding:15px;margin-bottom:8px;background:#0f1729;border-radius:8px;border:2px solid transparent;cursor:pointer;transition:all 0.3s ease;position:relative;}
+.row-item:hover{background:#1e2642;border-color:#4a5568;transform:translateX(5px);}
 .row-item.selected{border-color:#667eea;background:#1e2642;box-shadow:0 0 20px rgba(102,126,234,0.3);}
 .row-item.matched{border-color:#48bb78;background:#1a2f23;}
 .row-item.suggested{border-color:#ecc94b;background:#2f2a1a;}
@@ -54,6 +58,9 @@ svg{width:100%;height:100%;}
 .connection-line.confirmed{stroke:#48bb78;stroke-width:3;}
 .connection-line.suggested{stroke:#ecc94b;stroke-width:2;stroke-dasharray:5,5;}
 .connection-line:hover{stroke-width:4;cursor:pointer;}
+.export-section{margin-top:30px;padding:20px;background:#1a1f3a;border-radius:12px;border:1px solid #2d3748;text-align:center;}
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:#a0aec0;}
+.empty-icon{font-size:4em;margin-bottom:20px;opacity:0.5;}
 .modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(10,14,39,0.9);z-index:1000;align-items:center;justify-content:center;}
 .modal.active{display:flex;}
 .modal-content{background:#1a1f3a;border-radius:12px;padding:30px;max-width:500px;width:90%;border:1px solid #2d3748;}
@@ -64,73 +71,91 @@ svg{width:100%;height:100%;}
 .comparison-item{padding:15px;background:#0f1729;border-radius:8px;border:1px solid #2d3748;}
 .comparison-arrow{font-size:2em;color:#667eea;}
 /* Drawer trame finale */
-#drawer{position:fixed;top:0;right:-350px;width:350px;height:100%;background:#1a1f3a;border-left:2px solid #2d3748;transition:all 0.3s ease;z-index:2000;padding:20px;overflow-y:auto;}
-#drawer.open{right:0;}
-#columnList div{padding:10px;background:#0f1729;margin-bottom:8px;border-radius:6px;border:1px solid #2d3748;cursor:grab;display:flex;align-items:center;gap:5px;}
+#drawer{position:fixed;top:0;right:0;width:300px;height:100%;background:#1a1f3a;border-left:2px solid #2d3748;transition:all 0.3s ease;z-index:2000;padding:20px;overflow-y:auto;}
+#drawer.open{transform:translateX(0);}
+#columnList>div{margin-bottom:8px;}
 </style>
 </head>
 <body>
 <header>
-<h1>⚡ Data Matcher Pro v2</h1>
-<p class="subtitle">Matching intelligent + trame finale dynamique</p>
+<h1>⚡ Data Matcher Pro</h1>
+<p class="subtitle">Raccordement intelligent de données • Dark Mode</p>
 </header>
-
 <div class="container">
-<!-- Upload -->
+<!-- Upload Section -->
 <div class="upload-section">
 <div class="upload-box" id="upload1" onclick="document.getElementById('file1').click()">
+<div class="upload-icon">📄</div>
 <div class="upload-label">Table 1 (Référence)</div>
+<div style="color:#a0aec0;font-size:0.9em;">CSV, XLSX</div>
 <div class="file-name" id="filename1"></div>
 <input type="file" id="file1" accept=".csv,.xlsx,.xls">
 </div>
 <div class="upload-box" id="upload2" onclick="document.getElementById('file2').click()">
+<div class="upload-icon">📄</div>
 <div class="upload-label">Table 2 (À matcher)</div>
+<div style="color:#a0aec0;font-size:0.9em;">CSV, XLSX</div>
 <div class="file-name" id="filename2"></div>
 <input type="file" id="file2" accept=".csv,.xlsx,.xls">
 </div>
 </div>
-
-<!-- Stats -->
+<!-- Stats Bar -->
 <div class="stats-bar" id="statsBar" style="display:none;">
-<div class="stat-item"><div class="stat-value green" id="matchedCount">0</div><div class="stat-label">✅ Validés</div></div>
-<div class="stat-item"><div class="stat-value yellow" id="suggestedCount">0</div><div class="stat-label">⚠️ Suggestions</div></div>
-<div class="stat-item"><div class="stat-value red" id="orphan1Count">0</div><div class="stat-label">❌ Orphelins T1</div></div>
-<div class="stat-item"><div class="stat-value blue" id="orphan2Count">0</div><div class="stat-label">➕ Orphelins T2</div></div>
+<div class="stat-item">
+<div class="stat-value green" id="matchedCount">0</div>
+<div class="stat-label">✅ Validés</div>
 </div>
-
+<div class="stat-item">
+<div class="stat-value yellow" id="suggestedCount">0</div>
+<div class="stat-label">⚠️ Suggestions</div>
+</div>
+<div class="stat-item">
+<div class="stat-value red" id="orphan1Count">0</div>
+<div class="stat-label">❌ Orphelins T1</div>
+</div>
+<div class="stat-item">
+<div class="stat-value blue" id="orphan2Count">0</div>
+<div class="stat-label">➕ Orphelins T2</div>
+</div>
+</div>
 <!-- Controls -->
 <div class="controls" id="controls" style="display:none;">
 <div class="filters">
-<select id="filterSelect"><option value="all">Tous</option><option value="matched">Validés</option><option value="suggested">Suggestions</option><option value="unmatched">Non-matchés</option></select>
-<button class="primary" onclick="applyFilter()">Valider</button>
+<select id="filterSelect">
+<option value="all">Tous les profils</option>
+<option value="matched">Validés uniquement</option>
+<option value="suggested">Suggestions uniquement</option>
+<option value="unmatched">Non-matchés uniquement</option>
+</select>
+<button class="primary" onclick="applyFilter()">✅ Valider</button>
+<button onclick="autoSuggest()">🔄 Re-scanner</button>
 </div>
 <div>
-<button class="success" onclick="openDrawer()" id="drawerBtn">🗂 Trame finale</button>
+<button class="success" onclick="exportMerged()" id="exportBtn" disabled>📥 Exporter (CSV/XLSX)</button>
 </div>
 </div>
-
 <!-- Matching Area -->
 <div class="matching-area" id="matchingArea" style="display:none;">
 <div class="table-panel">
-<div class="panel-header">Table 1</div>
-<div class="table-rows" id="table1Rows"></div>
+<div class="panel-header table1">Table 1</div>
+<div class="table-rows" id="table1Rows">
+<div class="empty-state"><div class="empty-icon">📊</div><div>En attente des données...</div></div>
+</div>
 </div>
 <div class="connection-area"><svg id="connectionSvg"></svg></div>
 <div class="table-panel">
-<div class="panel-header">Table 2</div>
-<div class="table-rows" id="table2Rows"></div>
+<div class="panel-header table2">Table 2</div>
+<div class="table-rows" id="table2Rows">
+<div class="empty-state"><div class="empty-icon">📊</div><div>En attente des données...</div></div>
 </div>
 </div>
 </div>
-
 <!-- Drawer trame finale -->
 <div id="drawer">
-<h3>🛠 Trame finale</h3>
-<p>Déplacer et cocher/décocher les colonnes à inclure.</p>
+<h3>🗂️ Trame finale</h3>
 <div id="columnList"></div>
-<button class="success" onclick="exportMerged()">📥 Export CSV + XLSX</button>
+<button class="primary" onclick="exportMerged()">📤 Exporter trame</button>
 </div>
-
 <!-- Modal -->
 <div class="modal" id="matchModal">
 <div class="modal-content">
@@ -148,188 +173,63 @@ svg{width:100%;height:100%;}
 </div>
 </div>
 </div>
-
 <script>
 const state={table1:[],table2:[],matches:[],selectedRow1:null,selectedRow2:null,pendingMatch:null};
-
-// ====== UPLOAD ======
+// ====== FILE UPLOAD ======
 document.getElementById('file1').addEventListener('change',e=>handleFileUpload(e,1));
 document.getElementById('file2').addEventListener('change',e=>handleFileUpload(e,2));
-
-function handleFileUpload(e,tableNum){
- const file=e.target.files[0]; if(!file) return;
- const uploadBox=document.getElementById(`upload${tableNum}`);
- const fileName=document.getElementById(`filename${tableNum}`);
- fileName.textContent=`✓ ${file.name}`;
- uploadBox.classList.add('has-file');
-
+function handleFileUpload(event,tableNum){
+ const file=event.target.files[0]; if(!file) return;
  const reader=new FileReader();
- reader.onload=function(ev){
-  let jsonData=[];
-  if(file.name.endsWith('.csv')){
-   jsonData=Papa.parse(ev.target.result,{header:true,skipEmptyLines:true}).data;
-  }else{
-   const data=new Uint8Array(ev.target.result);
-   const workbook=XLSX.read(data,{type:'array'});
-   const firstSheet=workbook.Sheets[workbook.SheetNames[0]];
-   jsonData=XLSX.utils.sheet_to_json(firstSheet);
-  }
-  jsonData=jsonData.map((row,i)=>({id:`t${tableNum}_${i}`,...row}));
-  if(tableNum===1) state.table1=jsonData;
-  else state.table2=jsonData;
+ reader.onload=e=>{
+  const data=new Uint8Array(e.target.result);
+  const wb=XLSX.read(data,{type:'array'});
+  const ws=wb.Sheets[wb.SheetNames[0]];
+  const jsonData=XLSX.utils.sheet_to_json(ws);
+  if(tableNum===1){state.table1=jsonData.map((r,i)=>({id:`t1_${i}`,...r}));document.getElementById('filename1').textContent=`✓ ${file.name}`;document.getElementById('upload1').classList.add('has-file');}
+  else{state.table2=jsonData.map((r,i)=>({id:`t2_${i}`,...r}));document.getElementById('filename2').textContent=`✓ ${file.name}`;document.getElementById('upload2').classList.add('has-file');}
   if(state.table1.length>0&&state.table2.length>0) initializeMatching();
-};
+ };
  reader.readAsArrayBuffer(file);
 }
-
-// ====== INITIALIZE MATCHING ======
+// ====== INITIALIZE ======
 function initializeMatching(){
  document.getElementById('statsBar').style.display='grid';
  document.getElementById('controls').style.display='flex';
  document.getElementById('matchingArea').style.display='grid';
- renderTable1(); renderTable2(); drawConnections(); updateStats(); generateTrame();
+ renderTable1(); renderTable2(); updateStats(); generateTrame();
 }
-
 // ====== RENDER TABLES ======
-function renderTable1(){renderTable(state.table1,1);}
-function renderTable2(){renderTable(state.table2,2);}
-function renderTable(table,tableNum){
- const container=document.getElementById(`table${tableNum}Rows`);
- container.innerHTML='';
- table.forEach(row=>{
-  const match=state.matches.find(m=>m.id1===row.id||m.id2===row.id);
-  const div=document.createElement('div');
-  div.className='row-item';
-  div.dataset.rowId=row.id; div.dataset.table=tableNum;
-  if(match){div.classList.add(match.confirmed?'matched':'suggested'); const ind=document.createElement('div'); ind.className=`match-indicator ${match.confirmed?'':'suggested'}`; div.appendChild(ind);}
-  const keys=Object.keys(row).filter(k=>'id'!==k);
-  const main=keys[0]||'';
-  div.innerHTML=`<div class="row-content"><div class="row-main">${row[main]||'N/A'}</div><div class="row-details">${keys.slice(1,3).map(k=>`${k}:${row[k]}`).join(' • ')}</div></div>`;
-  div.addEventListener('click',()=>handleRowClick(row.id,tableNum));
-  container.appendChild(div);
-});
+function renderTable1(){renderTableFiltered(state.table1,1);}
+function renderTable2(){renderTableFiltered(state.table2,2);}
+function renderTableFiltered(table,tableNum){
+ const container=document.getElementById(`table${tableNum}Rows`); container.innerHTML='';
+ table.forEach(row=>{const div=document.createElement('div');div.className='row-item';div.dataset.rowId=row.id;div.dataset.table=tableNum;div.innerHTML=formatRow(row);div.addEventListener('click',()=>handleRowClick(row.id,tableNum));container.appendChild(div);});
 }
-
-// ====== ROW CLICK & MODAL ======
+function formatRow(row){const keys=Object.keys(row).filter(k=>'id'!==k);return `<div class="row-content"><div class="row-main">${row[keys[0]]||'N/A'}</div><div class="row-details">${keys.slice(1,3).map(k=>`${k}: ${row[k]}`).join(' • ')}</div></div>`;}
+// ====== MATCH MODAL ======
 function handleRowClick(rowId,tableNum){
- if(tableNum===1) state.selectedRow1=rowId;
- else state.selectedRow2=rowId;
- document.querySelectorAll(`.row-item[data-table="${tableNum}"]`).forEach(el=>el.classList.remove('selected'));
- document.querySelector(`[data-row-id="${rowId}"]`).classList.add('selected');
+ if(tableNum===1){state.selectedRow1=rowId;document.querySelectorAll('[data-table="1"]').forEach(el=>el.classList.remove('selected'));document.querySelector(`[data-row-id="${rowId}"]`).classList.add('selected');}
+ else{state.selectedRow2=rowId;document.querySelectorAll('[data-table="2"]').forEach(el=>el.classList.remove('selected'));document.querySelector(`[data-row-id="${rowId}"]`).classList.add('selected');}
  if(state.selectedRow1&&state.selectedRow2) showMatchModal(state.selectedRow1,state.selectedRow2);
 }
 function showMatchModal(id1,id2){
- const r1=state.table1.find(r=>r.id===id1);
- const r2=state.table2.find(r=>r.id===id2);
- document.getElementById('modalRow1').innerHTML=formatRow(r1);
- document.getElementById('modalRow2').innerHTML=formatRow(r2);
- state.pendingMatch={id1,id2};
- document.getElementById('matchModal').classList.add('active');
+ const row1=state.table1.find(r=>r.id===id1); const row2=state.table2.find(r=>r.id===id2);
+ document.getElementById('modalRow1').innerHTML=formatRowForModal(row1);
+ document.getElementById('modalRow2').innerHTML=formatRowForModal(row2);
+ state.pendingMatch={id1,id2};document.getElementById('matchModal').classList.add('active');
 }
-function formatRow(r){return Object.keys(r).filter(k=>'id'!==k).map(k=>`<div><strong>${k}:</strong> ${r[k]}</div>`).join('');}
-function confirmMatch(){
- if(!state.pendingMatch) return;
- const idx=state.matches.findIndex(m=>m.id1===state.pendingMatch.id1||m.id2===state.pendingMatch.id2);
- if(idx>=0) state.matches[idx]={...state.pendingMatch,confirmed:true,score:1};
- else state.matches.push({...state.pendingMatch,confirmed:true,score:1});
- closeModal(); renderTable1(); renderTable2(); drawConnections(); updateStats(); state.selectedRow1=null; state.selectedRow2=null;
-}
+function formatRowForModal(row){const keys=Object.keys(row).filter(k=>'id'!==k);return keys.slice(0,4).map(k=>`<div><strong>${k}:</strong> ${row[k]}</div>`).join('');}
+function confirmMatch(){if(!state.pendingMatch) return;const existingIndex=state.matches.findIndex(m=>m.id1===state.pendingMatch.id1||m.id2===state.pendingMatch.id2);if(existingIndex>=0){state.matches[existingIndex]={...state.pendingMatch,confirmed:true,score:1};}else{state.matches.push({...state.pendingMatch,confirmed:true,score:1});}closeModal();renderTable1();renderTable2();drawConnections();updateStats();state.selectedRow1=null;state.selectedRow2=null;}
 function closeModal(){document.getElementById('matchModal').classList.remove('active');state.pendingMatch=null;state.selectedRow1=null;state.selectedRow2=null;document.querySelectorAll('.row-item').forEach(el=>el.classList.remove('selected'));}
-
-// ====== AUTO SUGGEST ======
-function autoSuggest(){
- state.table1.forEach(r1=>{
-  if(state.matches.find(m=>m.id1===r1.id)) return;
-  const k1=Object.keys(r1).filter(k=>'id'!==k)[0]||'';
-  const v1=(r1[k1]||'').toLowerCase();
-  let best=null,bestScore=0;
-  state.table2.forEach(r2=>{
-   if(state.matches.find(m=>m.id2===r2.id)) return;
-   const k2=Object.keys(r2).filter(k=>'id'!==k)[0]||'';
-   const v2=(r2[k2]||'').toLowerCase();
-   const score=similarity(v1,v2);
-   if(score>bestScore&&score>0.6){bestScore=score;best=r2.id;}
-  });
-  if(best) state.matches.push({id1:r1.id,id2:best,confirmed:false,score:bestScore});
- });
- renderTable1(); renderTable2(); drawConnections(); updateStats();
-}
-function similarity(a,b){const longer=a.length>b.length?a:b;const shorter=a.length>b.length?b:a;return longer.length===0?1:(longer.length-editDistance(longer,shorter))/longer.length;}
-function editDistance(s1,s2){s1=s1.toLowerCase();s2=s2.toLowerCase();const costs=[];for(let i=0;i<=s1.length;i++){let last=i;for(let j=0;j<=s2.length;j++){if(i===0){costs[j]=j;}else if(j>0){let newVal=costs[j-1];if(s1.charAt(i-1)!==s2.charAt(j-1)) newVal=Math.min(Math.min(newVal,last),costs[j-1])+1;costs[j-1]=last;last=newVal;}else costs[j]=last;}if(i>0)costs[s2.length]=last;}return costs[s2.length];}
-
-// ====== DRAW CONNECTIONS ======
-function drawConnections(){
- const svg=document.getElementById('connectionSvg'); svg.innerHTML='';
- const w=svg.clientWidth,h=svg.clientHeight;
- state.matches.forEach(m=>{
-  const el1=document.querySelector(`[data-row-id="${m.id1}"]`);
-  const el2=document.querySelector(`[data-row-id="${m.id2}"]`);
-  if(!el1||!el2) return;
-  const rect1=el1.getBoundingClientRect();
-  const rect2=el2.getBoundingClientRect();
-  const offset1=el1.offsetTop+el1.offsetHeight/2;
-  const offset2=el2.offsetTop+el2.offsetHeight/2;
-  const line=document.createElementNS("http://www.w3.org/2000/svg",'line');
-  line.setAttribute('x1','0'); line.setAttribute('y1',offset1); line.setAttribute('x2','100%'); line.setAttribute('y2',offset2);
-  line.className.baseVal='connection-line';
-  line.classList.add(m.confirmed?'confirmed':'suggested');
-  svg.appendChild(line);
-});
-}
-
-// ====== STATS ======
-function updateStats(){
- const matched=state.matches.filter(m=>m.confirmed).length;
- const suggested=state.matches.filter(m=>!m.confirmed).length;
- const orphan1=state.table1.length-matched-suggested;
- const orphan2=state.table2.length-matched-suggested;
- document.getElementById('matchedCount').textContent=matched;
- document.getElementById('suggestedCount').textContent=suggested;
- document.getElementById('orphan1Count').textContent=orphan1;
- document.getElementById('orphan2Count').textContent=orphan2;
-}
-
-// ====== FILTER ======
-function applyFilter(){
- const val=document.getElementById('filterSelect').value;
- const f1=state.table1.map(r=>({...r,visible:true})),f2=state.table2.map(r=>({...r,visible:true}));
- if(val==='matched'){f1.forEach(r=>{if(!state.matches.find(m=>m.id1===r.id&&m.confirmed)) r.visible=false;});f2.forEach(r=>{if(!state.matches.find(m=>m.id2===r.id&&m.confirmed)) r.visible=false;});}
- else if(val==='suggested'){f1.forEach(r=>{if(!state.matches.find(m=>m.id1===r.id&&!m.confirmed)) r.visible=false;});f2.forEach(r=>{if(!state.matches.find(m=>m.id2===r.id&&!m.confirmed)) r.visible=false;});}
- else if(val==='unmatched'){f1.forEach(r=>{if(state.matches.find(m=>m.id1===r.id)) r.visible=false;});f2.forEach(r=>{if(state.matches.find(m=>m.id2===r.id)) r.visible=false;});}
- renderTableFiltered(f1,1); renderTableFiltered(f2,2);
-}
-function renderTableFiltered(table,tableNum){
- const container=document.getElementById(`table${tableNum}Rows`); container.innerHTML='';
- table.forEach(row=>{if(!row.visible) return; const div=document.createElement('div'); div.className='row-item'; div.dataset.rowId=row.id; div.dataset.table=tableNum; div.innerHTML=formatRow(row); div.addEventListener('click',()=>handleRowClick(row.id,tableNum)); container.appendChild(div);});
-}
-
-// ====== TRAME FINALE ======
-function generateTrame(){
- const allCols=[...new Set([...state.table1.flatMap(r=>Object.keys(r).filter(k=>'id'!==k)),...state.table2.flatMap(r=>Object.keys(r).filter(k=>'id'!==k))])];
- const container=document.getElementById('columnList'); container.innerHTML='';
- allCols.forEach(c=>{
-  const div=document.createElement('div'); div.innerHTML=`<input type="checkbox" checked data-col="${c}"> ${c}`; container.appendChild(div);
- });
-}
-function openDrawer(){document.getElementById('drawer').classList.add('open');}
-function exportMerged(){
- const checkedCols=[...document.querySelectorAll('#columnList input:checked')].map(i=>i.dataset.col);
- const merged=[];
- state.table1.forEach(r1=>{
-  const m=state.matches.find(m=>m.id1===r1.id&&m.confirmed);
-  const r2=m?state.table2.find(r=>r.id===m.id2):{};
-  const combined={...r1,...r2};
-  const row={}; checkedCols.forEach(c=>row[c]=combined[c]||''); merged.push(row);
- });
- const ws=XLSX.utils.json_to_sheet(merged);
- const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Merged'); XLSX.writeFile(wb,'merged.xlsx');
- // CSV
- const csvContent=Papa.unparse(merged); const blob=new Blob([csvContent],{type:'text/csv;charset=utf-8;'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='merged.csv'; a.click();
- alert('Export terminé !');
-}
-
-// ====== INITIALIZE ======
-setTimeout(autoSuggest,500);
+function autoSuggest(){state.table1.forEach(r1=>{if(state.matches.find(m=>m.id1===r1.id)) return;let bestMatch=null,bestScore=0;const keys1=Object.keys(r1).filter(k=>'id'!==k);const val1=String(r1[keys1[0]]).toLowerCase();state.table2.forEach(r2=>{if(state.matches.find(m=>m.id2===r2.id)) return;const keys2=Object.keys(r2).filter(k=>'id'!==k);const val2=String(r2[keys2[0]]).toLowerCase();if(val1===val2){bestMatch={id1:r1.id,id2:r2.id};bestScore=1;}});if(bestMatch) state.matches.push({...bestMatch,confirmed:false,score:bestScore});});renderTable1();renderTable2();drawConnections();updateStats();}
+function drawConnections(){const svg=document.getElementById('connectionSvg');svg.innerHTML='';state.matches.forEach(m=>{const el1=document.querySelector(`[data-row-id="${m.id1}"]`);const el2=document.querySelector(`[data-row-id="${m.id2}"]`);if(!el1||!el2) return;const rect1=el1.getBoundingClientRect(),rect2=el2.getBoundingClientRect();const svgRect=svg.getBoundingClientRect();const x1=rect1.right-svgRect.left,y1=rect1.top+rect1.height/2-svgRect.top;const x2=rect2.left-svgRect.left,y2=rect2.top+rect2.height/2-svgRect.top;const line=document.createElementNS("http://www.w3.org/2000/svg",'path');line.setAttribute('d',`M${x1},${y1} C${x1+40},${y1} ${x2-40},${y2} ${x2},${y2}`);line.className.baseVal='connection-line '+(m.confirmed?'confirmed':'suggested');svg.appendChild(line);});}
+function updateStats(){document.getElementById('matchedCount').textContent=state.matches.filter(m=>m.confirmed).length;document.getElementById('suggestedCount').textContent=state.matches.filter(m=>!m.confirmed).length;document.getElementById('orphan1Count').textContent=state.table1.filter(r=>!state.matches.find(m=>m.id1===r.id)).length;document.getElementById('orphan2Count').textContent=state.table2.filter(r=>!state.matches.find(m=>m.id2===r.id)).length;}
+function applyFilter(){const val=document.getElementById('filterSelect').value;[renderTableFiltered(state.table1,1),renderTableFiltered(state.table2,2)];if(val==='matched'){state.table1.forEach(r=>document.querySelector(`[data-row-id="${r.id}"]`).style.display=state.matches.find(m=>m.id1===r.id&&m.confirmed)?'block':'none');state.table2.forEach(r=>document.querySelector(`[data-row-id="${r.id}"]`).style.display=state.matches.find(m=>m.id2===r.id&&m.confirmed)?'block':'none');}else if(val==='suggested'){state.table1.forEach(r=>document.querySelector(`[data-row-id="${r.id}"]`).style.display=state.matches.find(m=>m.id1===r.id&&!m.confirmed)?'block':'none');state.table2.forEach(r=>document.querySelector(`[data-row-id="${r.id}"]`).style.display=state.matches.find(m=>m.id2===r.id&&!m.confirmed)?'block':'none');}else if(val==='unmatched'){state.table1.forEach(r=>document.querySelector(`[data-row-id="${r.id}"]`).style.display=!state.matches.find(m=>m.id1===r.id)?'block':'none');state.table2.forEach(r=>document.querySelector(`[data-row-id="${r.id}"]`).style.display=!state.matches.find(m=>m.id2===r.id)?'block':'none');}}
+// ====== FINAL TRAME + EXPORT ======
+function generateTrame(){const allCols=new Set();[...state.table1,...state.table2].forEach(r=>Object.keys(r).filter(k=>'id'!==k).forEach(k=>allCols.add(k)));const container=document.getElementById('columnList');container.innerHTML='';allCols.forEach(col=>{const div=document.createElement('div');div.innerHTML=`<label><input type="checkbox" checked data-col="${col}"> ${col}</label>`;container.appendChild(div);});}
+function exportMerged(){const checkedCols=[...document.querySelectorAll('#columnList input:checked')].map(i=>i.dataset.col);const merged=[];state.table1.forEach(r1=>{const m=state.matches.find(m=>m.id1===r1.id&&m.confirmed);const row={};checkedCols.forEach(c=>{row[c]=r1[c]||''});if(m){const r2=state.table2.find(r=>r.id===m.id2);checkedCols.forEach(c=>{if(r2[c]) row[c]=r2[c]});}merged.push(row);});const ws=XLSX.utils.json_to_sheet(merged);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Merged');XLSX.writeFile(wb,'merged.xlsx');}
 </script>
+</div>
 </body>
 </html>
