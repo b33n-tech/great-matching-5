@@ -3,290 +3,231 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Data Matcher Pro - Merge & Trame</title>
+<title>Data Matcher Pro v2</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
-    * { margin:0; padding:0; box-sizing:border-box; }
-    body { font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background:#0a0e27; color:#e0e6ed; overflow-x:hidden; }
-    .container { max-width: 1200px; margin: 0 auto; padding:20px; }
-    header { text-align:center; padding:30px 0; background:linear-gradient(135deg,#1a1f3a 0%,#0f1729 100%); border-bottom:2px solid #2d3748; margin-bottom:30px; }
-    h1 { font-size:2.5em; background:linear-gradient(135deg,#667eea 0%,#764ba2 100%); -webkit-background-clip:text; -webkit-text-fill-color:transparent; margin-bottom:10px; }
-    .subtitle { color:#a0aec0; font-size:1.1em; }
-
-    .upload-section { display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:30px; }
-    .upload-box { background:#1a1f3a; border:2px dashed #4a5568; border-radius:12px; padding:40px; text-align:center; cursor:pointer; transition:all 0.3s ease; position:relative; }
-    .upload-box:hover { border-color:#667eea; background:#1e2642; transform:translateY(-2px); }
-    .upload-box.has-file { border-color:#48bb78; border-style:solid; background:#1a2f23; }
-    .upload-icon { font-size:3em; margin-bottom:15px; }
-    .upload-label { font-size:1.2em; color:#cbd5e0; margin-bottom:8px; }
-    .file-name { color:#48bb78; font-size:0.9em; margin-top:10px; font-weight:600; }
-    input[type="file"] { display:none; }
-
-    .controls { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; padding:15px; background:#1a1f3a; border-radius:12px; border:1px solid #2d3748; }
-    select, button { padding:10px 20px; background:#2d3748; color:#e0e6ed; border:1px solid #4a5568; border-radius:6px; cursor:pointer; font-size:0.95em; transition:all 0.3s ease; }
-    select:hover, button:hover { background:#4a5568; border-color:#667eea; }
-    button.primary { background:linear-gradient(135deg,#667eea 0%,#764ba2 100%); border:none; color:white; font-weight:600; }
-    button.primary:hover { transform:translateY(-2px); box-shadow:0 5px 15px rgba(102,126,234,0.4); }
-    button.success { background:#48bb78; border:none; color:white; }
-    button:disabled { opacity:0.5; cursor:not-allowed; }
-
-    .matching-area { display:grid; grid-template-columns:1fr 80px 1fr; gap:20px; height:400px; }
-    .table-panel { background:#1a1f3a; border-radius:12px; border:1px solid #2d3748; overflow:hidden; display:flex; flex-direction:column; }
-    .panel-header { padding:15px 20px; background:#0f1729; border-bottom:1px solid #2d3748; font-weight:600; font-size:1.1em; }
-    .panel-header.table1 { border-left:3px solid #667eea; }
-    .panel-header.table2 { border-left:3px solid #764ba2; }
-    .table-rows { overflow-y:auto; flex:1; padding:10px; }
-    .row-item { padding:10px; margin-bottom:8px; background:#0f1729; border-radius:8px; border:2px solid transparent; cursor:pointer; transition:all 0.3s ease; position:relative; }
-    .row-item:hover { background:#1e2642; border-color:#4a5568; transform:translateX(5px); }
-    .row-item.selected { border-color:#667eea; background:#1e2642; box-shadow:0 0 20px rgba(102,126,234,0.3); }
-    .row-item.matched { border-color:#48bb78; background:#1a2f23; }
-    .row-item.suggested { border-color:#ecc94b; background:#2f2a1a; }
-    .row-content { display:flex; flex-direction:column; gap:5px; }
-    .row-main { font-weight:600; font-size:1.05em; color:#e0e6ed; }
-    .row-details { font-size:0.85em; color:#a0aec0; }
-    .match-indicator { position:absolute; top:10px; right:10px; width:12px; height:12px; border-radius:50%; background:#48bb78; }
-    .match-indicator.suggested { background:#ecc94b; }
-
-    .connection-area { position:relative; background:#0f1729; border-radius:12px; border:1px solid #2d3748; }
-    svg { width:100%; height:100%; }
-    .connection-line { stroke-width:2; fill:none; transition:all 0.3s ease; }
-    .connection-line.confirmed { stroke:#48bb78; stroke-width:3; }
-    .connection-line.suggested { stroke:#ecc94b; stroke-width:2; stroke-dasharray:5,5; }
-    .connection-line:hover { stroke-width:4; cursor:pointer; }
-
-    .export-section { margin-top:30px; padding:20px; background:#1a1f3a; border-radius:12px; border:1px solid #2d3748; text-align:center; }
-    .export-options { display:flex; gap:15px; justify-content:center; margin-top:20px; }
-
-    /* Trame Modal */
-    .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(10,14,39,0.95); z-index:1000; align-items:center; justify-content:center; }
-    .modal.active { display:flex; }
-    .modal-content { background:#1a1f3a; border-radius:12px; padding:30px; max-width:900px; width:95%; border:1px solid #2d3748; max-height:90%; overflow:auto; }
-    .modal-header { font-size:1.5em; margin-bottom:20px; padding-bottom:15px; border-bottom:1px solid #2d3748; display:flex; justify-content:space-between; align-items:center; }
-    .modal-body { margin-bottom:20px; }
-    .column-list { display:flex; flex-wrap:wrap; gap:10px; }
-    .column-item { padding:8px 12px; background:#0f1729; border-radius:6px; border:1px solid #2d3748; cursor:grab; display:flex; align-items:center; gap:5px; }
-    .column-item input[type=checkbox] { margin-right:5px; }
+body{font-family:sans-serif;background:#0a0e27;color:#e0e6ed;margin:0;padding:0;}
+header{padding:20px;text-align:center;background:#1a1f3a;}
+header h1{margin-bottom:5px;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.container{padding:20px;max-width:1200px;margin:auto;}
+.upload-section{display:flex;gap:20px;margin-bottom:20px;}
+.upload-box{flex:1;padding:30px;border:2px dashed #4a5568;text-align:center;border-radius:10px;cursor:pointer;transition:all 0.3s;}
+.upload-box.has-file{border-color:#48bb78;background:#1a2f23;}
+.upload-box:hover{border-color:#667eea;}
+input[type=file]{display:none;}
+.matching-area{display:grid;grid-template-columns:1fr 80px 1fr;gap:20px;height:400px;margin-bottom:20px;}
+.table-panel{background:#1a1f3a;border-radius:10px;border:1px solid #2d3748;display:flex;flex-direction:column;overflow:hidden;}
+.panel-header{padding:10px;background:#0f1729;border-bottom:1px solid #2d3748;font-weight:600;}
+.table-rows{overflow-y:auto;flex:1;padding:5px;}
+.row-item{padding:10px;margin-bottom:5px;background:#0f1729;border-radius:5px;border:2px solid transparent;cursor:pointer;transition:all 0.3s;}
+.row-item:hover{border-color:#4a5568;}
+.row-item.selected{border-color:#667eea;}
+.row-item.matched{border-color:#48bb78;background:#1a2f23;}
+.row-item.suggested{border-color:#ecc94b;background:#2f2a1a;}
+.match-indicator{position:absolute;top:10px;right:10px;width:12px;height:12px;border-radius:50%;background:#48bb78;}
+.match-indicator.suggested{background:#ecc94b;}
+.connection-area{position:relative;background:#0f1729;border-radius:10px;border:1px solid #2d3748;}
+svg{width:100%;height:100%;}
+.drawer{position:fixed;top:0;right:-400px;width:400px;height:100%;background:#1a1f3a;border-left:1px solid #2d3748;box-shadow:-5px 0 15px rgba(0,0,0,0.5);transition:right 0.3s ease;display:flex;flex-direction:column;z-index:2000;}
+.drawer.active{right:0;}
+.drawer-header{display:flex;justify-content:space-between;align-items:center;padding:15px;border-bottom:1px solid #2d3748;}
+.drawer-body{flex:1;overflow-y:auto;padding:15px;}
+.drawer-footer{padding:15px;border-top:1px solid #2d3748;text-align:center;}
+button{padding:8px 15px;border:none;border-radius:5px;cursor:pointer;}
+button.primary{background:#667eea;color:white;}
+button.primary:hover{transform:translateY(-2px);}
+button.success{background:#48bb78;color:white;}
+#rowDetailsPanel{background:#1a1f3a;padding:10px;margin:10px 0;border:1px solid #2d3748;border-radius:8px;}
+.counters{font-size:0.9em;color:#a0aec0;padding:5px;}
 </style>
 </head>
 <body>
-
 <header>
-<h1>⚡ Data Matcher Pro</h1>
-<p class="subtitle">Merge intelligent + Trame configurable</p>
+<h1>⚡ Data Matcher Pro v2</h1>
+<p>Matching interactif • Dark Mode</p>
 </header>
-
 <div class="container">
-
-<!-- Upload Section -->
 <div class="upload-section">
-    <div class="upload-box" id="upload1" onclick="document.getElementById('file1').click()">
-        <div class="upload-icon">📄</div>
-        <div class="upload-label">Table 1 (Référence)</div>
-        <div style="color: #a0aec0; font-size: 0.9em;">CSV, XLSX</div>
-        <div class="file-name" id="filename1"></div>
-        <input type="file" id="file1" accept=".csv,.xlsx,.xls">
-    </div>
-    <div class="upload-box" id="upload2" onclick="document.getElementById('file2').click()">
-        <div class="upload-icon">📄</div>
-        <div class="upload-label">Table 2 (À matcher)</div>
-        <div style="color: #a0aec0; font-size: 0.9em;">CSV, XLSX</div>
-        <div class="file-name" id="filename2"></div>
-        <input type="file" id="file2" accept=".csv,.xlsx,.xls">
-    </div>
+<div class="upload-box" id="upload1" onclick="document.getElementById('file1').click()">
+📄 Table 1 (Référence)
+<div style="color:#a0aec0;font-size:0.8em;">CSV/XLSX</div>
+<div id="filename1"></div>
+<input type="file" id="file1" accept=".csv,.xlsx,.xls">
+</div>
+<div class="upload-box" id="upload2" onclick="document.getElementById('file2').click()">
+📄 Table 2 (À matcher)
+<div style="color:#a0aec0;font-size:0.8em;">CSV/XLSX</div>
+<div id="filename2"></div>
+<input type="file" id="file2" accept=".csv,.xlsx,.xls">
+</div>
 </div>
 
-<!-- Controls -->
-<div class="controls" id="controls" style="display:none;">
-    <div class="filters">
-        <select id="filterSelect">
-            <option value="all">Tous les profils</option>
-            <option value="matched">Validés uniquement</option>
-            <option value="suggested">Suggestions uniquement</option>
-            <option value="unmatched">Non-matchés uniquement</option>
-        </select>
-        <button class="primary" onclick="applyFilter()">✅ Appliquer</button>
-        <button onclick="autoSuggest()">🔄 Re-scanner</button>
-    </div>
-    <div>
-        <button class="success" onclick="openTrameModal()" id="configureTrameBtn" disabled>⚙️ Configurer Trame</button>
-    </div>
-</div>
-
-<!-- Matching Area -->
 <div class="matching-area" id="matchingArea" style="display:none;">
-    <div class="table-panel">
-        <div class="panel-header table1">Table 1</div>
-        <div class="table-rows" id="table1Rows">
-            <div style="color:#a0aec0; text-align:center;">En attente des données...</div>
-        </div>
-    </div>
-    <div class="connection-area">
-        <svg id="connectionSvg"></svg>
-    </div>
-    <div class="table-panel">
-        <div class="panel-header table2">Table 2</div>
-        <div class="table-rows" id="table2Rows">
-            <div style="color:#a0aec0; text-align:center;">En attente des données...</div>
-        </div>
-    </div>
+<div class="table-panel">
+<div class="panel-header">Table 1</div>
+<div class="counters" id="table1Counters">Matchés: <span id="t1Matched">0</span> | Orphelins: <span id="t1Orphans">0</span></div>
+<div class="table-rows" id="table1Rows"></div>
+</div>
+<div class="connection-area">
+<svg id="connectionSvg"></svg>
+</div>
+<div class="table-panel">
+<div class="panel-header">Table 2</div>
+<div class="counters" id="table2Counters">Matchés: <span id="t2Matched">0</span> | Orphelins: <span id="t2Orphans">0</span></div>
+<div class="table-rows" id="table2Rows"></div>
+</div>
 </div>
 
-<!-- Trame Modal -->
-<div class="modal" id="trameModal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <span>🛠 Configurer Trame Finale</span>
-            <button onclick="closeTrameModal()">❌</button>
-        </div>
-        <div class="modal-body">
-            <div class="column-list" id="columnList"></div>
-        </div>
-        <div style="text-align:right;">
-            <button class="primary" onclick="exportMerged()">📥 Exporter CSV Final</button>
-        </div>
-    </div>
+<button id="openTrameBtn" class="primary" onclick="openTrameDrawer()" style="margin-bottom:10px;">🛠️ Modifier la trame</button>
+
+<div id="rowDetailsPanel"></div>
+
+<!-- Drawer Trame -->
+<div id="trameDrawer" class="drawer">
+<div class="drawer-header">
+<h3>🗂️ Trame finale</h3>
+<button onclick="closeTrameDrawer()">✖</button>
+</div>
+<div class="drawer-body" id="columnList"></div>
+<div class="drawer-footer">
+<button class="primary" onclick="exportMerged()">📥 Exporter CSV</button>
+</div>
+</div>
+
 </div>
 
 <script>
-const state = { table1: [], table2: [], matches: [], selectedRow1:null, selectedRow2:null, pendingMatch:null };
+const state={table1:[],table2:[],matches:[],selectedRow1:null,selectedRow2:null,pendingMatch:null};
 
 // --- File Upload ---
-document.getElementById('file1').addEventListener('change', e => handleFileUpload(e,1));
-document.getElementById('file2').addEventListener('change', e => handleFileUpload(e,2));
+document.getElementById('file1').addEventListener('change',e=>handleFileUpload(e,1));
+document.getElementById('file2').addEventListener('change',e=>handleFileUpload(e,2));
 
-function handleFileUpload(e, tableNum) {
-    const file = e.target.files[0]; if(!file) return;
-    document.getElementById(`filename${tableNum}`).textContent = `✓ ${file.name}`;
-    document.getElementById(`upload${tableNum}`).classList.add('has-file');
-    const reader = new FileReader();
-    reader.onload = e => {
-        const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, { type: 'array' });
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const jsonData = XLSX.utils.sheet_to_json(sheet);
-        if(tableNum===1) state.table1=jsonData.map((r,i)=>({id:`t1_${i}`, ...r}));
-        else state.table2=jsonData.map((r,i)=>({id:`t2_${i}`, ...r}));
-        if(state.table1.length>0 && state.table2.length>0) initializeMatching();
-    };
-    reader.readAsArrayBuffer(file);
+function handleFileUpload(event,tableNum){
+ const file=event.target.files[0]; if(!file) return;
+ document.getElementById(`filename${tableNum}`).textContent=`✓ ${file.name}`;
+ document.getElementById(`upload${tableNum}`).classList.add('has-file');
+ const reader=new FileReader();
+ reader.onload=e=>{
+  const data=new Uint8Array(e.target.result);
+  const workbook=XLSX.read(data,{type:'array'});
+  const firstSheet=workbook.Sheets[workbook.SheetNames[0]];
+  const jsonData=XLSX.utils.sheet_to_json(firstSheet);
+  if(tableNum===1) state.table1=jsonData.map((r,i)=>({id:`t1_${i}`,...r}));
+  else state.table2=jsonData.map((r,i)=>({id:`t2_${i}`,...r}));
+  if(state.table1.length && state.table2.length) initializeMatching();
+ };
+ reader.readAsArrayBuffer(file);
 }
 
 // --- Initialize Matching ---
 function initializeMatching(){
-    document.getElementById('controls').style.display='flex';
-    document.getElementById('matchingArea').style.display='grid';
-    renderTable();
-    document.getElementById('configureTrameBtn').disabled=false;
+ document.getElementById('matchingArea').style.display='grid';
+ renderTable(1); renderTable(2); drawConnections(); updateCounters();
 }
 
 // --- Render Table ---
-function renderTable(){
-    const t1=document.getElementById('table1Rows'), t2=document.getElementById('table2Rows');
-    t1.innerHTML=''; t2.innerHTML='';
-    state.table1.forEach(r=>{
-        const div=document.createElement('div'); div.className='row-item'; div.dataset.rowId=r.id; div.dataset.table=1;
-        div.innerHTML=`<div class="row-content"><div class="row-main">${r[Object.keys(r)[0]]||'N/A'}</div></div>`;
-        div.onclick=()=>selectRow(r.id,1); t1.appendChild(div);
-    });
-    state.table2.forEach(r=>{
-        const div=document.createElement('div'); div.className='row-item'; div.dataset.rowId=r.id; div.dataset.table=2;
-        div.innerHTML=`<div class="row-content"><div class="row-main">${r[Object.keys(r)[0]]||'N/A'}</div></div>`;
-        div.onclick=()=>selectRow(r.id,2); t2.appendChild(div);
-    });
+function renderTable(tableNum){
+ const container=document.getElementById(`table${tableNum}Rows`);
+ container.innerHTML='';
+ const data=tableNum===1?state.table1:state.table2;
+ data.forEach(row=>{
+  const match=state.matches.find(m=>tableNum===1?m.id1===row.id:m.id2===row.id);
+  const div=document.createElement('div');
+  div.className='row-item';
+  if(match) div.classList.add(match.confirmed?'matched':'suggested');
+  div.dataset.rowId=row.id; div.dataset.table=tableNum;
+  div.innerHTML=`<div>${Object.keys(row).filter(k=>k!=='id').map(k=>`${row[k]}`).join(' • ')}</div>`;
+  div.addEventListener('click',()=>selectRow(row.id,tableNum));
+  container.appendChild(div);
+ });
 }
 
-// --- Select Row ---
-function selectRow(id, tableNum){
-    if(tableNum===1) state.selectedRow1=id; else state.selectedRow2=id;
-    document.querySelectorAll(`.row-item[data-table="${tableNum}"]`).forEach(el=>el.classList.remove('selected'));
-    document.querySelector(`[data-row-id="${id}"]`).classList.add('selected');
-    if(state.selectedRow1 && state.selectedRow2) confirmManualMatch();
+// --- Select Row + Show Details ---
+function selectRow(id,tableNum){
+ if(tableNum===1) state.selectedRow1=id; else state.selectedRow2=id;
+ document.querySelectorAll(`.row-item[data-table="${tableNum}"]`).forEach(el=>el.classList.remove('selected'));
+ document.querySelector(`[data-row-id="${id}"]`).classList.add('selected');
+ // Show details
+ const row=(tableNum===1?state.table1:state.table2).find(r=>r.id===id);
+ document.getElementById('rowDetailsPanel').innerHTML='<strong>Détails de la ligne:</strong><pre>'+JSON.stringify(row,null,2)+'</pre>';
+ if(state.selectedRow1 && state.selectedRow2) confirmManualMatch();
 }
 
 // --- Confirm Manual Match ---
 function confirmManualMatch(){
-    state.matches.push({id1:state.selectedRow1,id2:state.selectedRow2,confirmed:true});
-    state.selectedRow1=null; state.selectedRow2=null;
-    renderTable(); drawConnections();
+ const m={id1:state.selectedRow1,id2:state.selectedRow2,confirmed:true};
+ const existing=state.matches.findIndex(x=>x.id1===m.id1||x.id2===m.id2);
+ if(existing>=0) state.matches[existing]=m; else state.matches.push(m);
+ state.selectedRow1=null; state.selectedRow2=null;
+ renderTable(1); renderTable(2); drawConnections(); updateCounters();
 }
 
-// --- Draw Connections ---
+// --- Draw connections ---
 function drawConnections(){
-    const svg=document.getElementById('connectionSvg'); svg.innerHTML='';
-    state.matches.forEach(m=>{
-        const r1=document.querySelector(`[data-row-id="${m.id1}"]`); const r2=document.querySelector(`[data-row-id="${m.id2}"]`);
-        if(!r1||!r2) return;
-        const rect1=r1.getBoundingClientRect(), rect2=r2.getBoundingClientRect(), svgRect=svg.getBoundingClientRect();
-        const y1=rect1.top-svgRect.top+rect1.height/2, y2=rect2.top-svgRect.top+rect2.height/2;
-        const line=document.createElementNS('http://www.w3.org/2000/svg','line');
-        line.setAttribute('x1','0'); line.setAttribute('y1',y1); line.setAttribute('x2','80'); line.setAttribute('y2',y2);
-        line.classList.add('connection-line','confirmed');
-        line.onclick=()=>{ if(confirm('Supprimer ce match?')){ state.matches=state.matches.filter(x=>x!==m); drawConnections(); } };
-        svg.appendChild(line);
-    });
+ const svg=document.getElementById('connectionSvg'); svg.innerHTML='';
+ state.matches.forEach(m=>{
+  const r1=document.querySelector(`[data-row-id="${m.id1}"]`);
+  const r2=document.querySelector(`[data-row-id="${m.id2}"]`);
+  if(!r1||!r2) return;
+  const rect1=r1.getBoundingClientRect(),rect2=r2.getBoundingClientRect(),svgRect=svg.getBoundingClientRect();
+  const y1=rect1.top-svgRect.top+rect1.height/2;
+  const y2=rect2.top-svgRect.top+rect2.height/2;
+  const line=document.createElementNS('http://www.w3.org/2000/svg','line');
+  line.setAttribute('x1','0'); line.setAttribute('y1',y1); line.setAttribute('x2','80'); line.setAttribute('y2',y2);
+  line.classList.add('connection-line');
+  line.setAttribute('stroke','#48bb78'); line.setAttribute('stroke-width','2');
+  line.addEventListener('click',()=>{if(confirm('Supprimer ce match ?')){state.matches=state.matches.filter(x=>x!==m);renderTable(1);renderTable(2);drawConnections();updateCounters();}});
+  svg.appendChild(line);
+ });
+ updateCounters();
 }
+
+// --- Update Counters ---
+function updateCounters(){
+ const matched=state.matches.length;
+ const orphan1=state.table1.length-matched;
+ const orphan2=state.table2.length-matched;
+ document.getElementById('t1Matched').textContent=matched;
+ document.getElementById('t1Orphans').textContent=orphan1;
+ document.getElementById('t2Matched').textContent=matched;
+ document.getElementById('t2Orphans').textContent=orphan2;
+}
+
+// --- Drawer Trame ---
+function openTrameDrawer(){document.getElementById('trameDrawer').classList.add('active'); renderColumnList();}
+function closeTrameDrawer(){document.getElementById('trameDrawer').classList.remove('active');}
+function renderColumnList(){
+ const container=document.getElementById('columnList'); container.innerHTML='';
+ const allCols=[...new Set([...Object.keys(state.table1[0]||{}),...Object.keys(state.table2[0]||{})])];
+ allCols.forEach(c=>{
+  const div=document.createElement('div'); div.style.marginBottom='8px';
+  div.innerHTML=`<label><input type="checkbox" checked> ${c}</label>`;
+  container.appendChild(div);
+ });
+}
+
+// --- Export CSV ---
+function exportMerged(){
+ const list=document.getElementById('columnList').children;
+ const keepCols=[...list].filter(l=>l.querySelector('input').checked).map(l=>l.textContent.trim());
+ const merged=[];
+ state.matches.forEach(m=>{
+  const row1=state.table1.find(r=>r.id===m.id1)||{};
+  const row2=state.table2.find(r=>r.id===m.id2)||{};
+  const newRow={Confirmed:m.confirmed};
+  keepCols.forEach(c=>{newRow[c]=row1[c]!==undefined?row1[c]:row2[c]!==undefined?row2[c]:'';});
+  merged.push(newRow);
+ });
+ const csv=Papa.unparse(merged);
+ const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+ const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='merged.csv'; a.click();
+}
+
+// Redraw on scroll
 document.querySelectorAll('.table-rows').forEach(el=>el.addEventListener('scroll',drawConnections));
 window.addEventListener('resize',drawConnections);
-
-// --- Auto Suggest ---
-function autoSuggest(){
-    state.table1.forEach(r1=>{
-        if(state.matches.find(m=>m.id1===r1.id)) return;
-        const val1=String(r1[Object.keys(r1)[0]]).toLowerCase();
-        let best=null,bestScore=0;
-        state.table2.forEach(r2=>{
-            if(state.matches.find(m=>m.id2===r2.id)) return;
-            const val2=String(r2[Object.keys(r2)[0]]).toLowerCase();
-            const score=(val1.length-Math.max(...val2.split('').map((_,i)=>val1[i]!=val2[i]?1:0)))/val1.length;
-            if(score>bestScore && score>0.6){ bestScore=score; best=r2.id; }
-        });
-        if(best) state.matches.push({id1:r1.id,id2:best,confirmed:false});
-    });
-    drawConnections();
-}
-
-// --- Filter ---
-function applyFilter(){
-    alert('Filtre appliqué! (à compléter selon logique choisie)');
-}
-
-// --- Trame Modal ---
-function openTrameModal(){
-    const modal=document.getElementById('trameModal'); modal.classList.add('active');
-    const list=document.getElementById('columnList'); list.innerHTML='';
-    const columns=[...new Set([...state.table1.flatMap(r=>Object.keys(r)),...state.table2.flatMap(r=>Object.keys(r))])].filter(c=>c!=='id');
-    columns.forEach(col=>{
-        const div=document.createElement('div'); div.className='column-item';
-        div.innerHTML=`<input type="checkbox" checked> ${col}`; list.appendChild(div);
-        div.draggable=true;
-        div.ondragstart=e=>{ e.dataTransfer.setData('text/plain',columns.indexOf(col)); };
-        div.ondragover=e=>e.preventDefault();
-        div.ondrop=e=>{ const from=parseInt(e.dataTransfer.getData('text')); list.insertBefore(list.children[from], div.nextSibling); e.preventDefault(); };
-    });
-}
-function closeTrameModal(){ document.getElementById('trameModal').classList.remove('active'); }
-
-// --- Export Merged CSV ---
-function exportMerged(){
-    const list=document.getElementById('columnList').children;
-    const keepCols=[...list].filter(l=>l.querySelector('input').checked).map(l=>l.textContent.trim());
-    const merged=[];
-    state.matches.forEach(m=>{
-        const row1=state.table1.find(r=>r.id===m.id1)||{};
-        const row2=state.table2.find(r=>r.id===m.id2)||{};
-        const newRow={Confirmed:m.confirmed};
-        keepCols.forEach(c=>{
-            newRow[c]=row1[c]!==undefined?row1[c]:row2[c]!==undefined?row2[c]:''; 
-        });
-        merged.push(newRow);
-    });
-    const csv = Papa.unparse(merged);
-    const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
-    const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='merged.csv'; a.click();
-}
 </script>
-
-</div>
 </body>
 </html>
